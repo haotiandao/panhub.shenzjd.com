@@ -1,5 +1,6 @@
 import type { IHotSearchStore, HotSearchItem, HotSearchStats } from "./hotSearchStore";
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from "node:fs";
+import { resolve } from "node:path";
 
 const MAX_ENTRIES = 30;
 const DEFAULT_DB_DIR = "./data";
@@ -56,7 +57,9 @@ export class SqliteHotSearchStore implements IHotSearchStore {
 
   private async init(): Promise<void> {
     const initSqlJs = (await import("sql.js")).default;
-    const SQL = await initSqlJs();
+    const SQL = await initSqlJs({
+      locateFile: (file: string) => resolve(process.cwd(), "node_modules/sql.js/dist", file),
+    });
 
     if (!existsSync(this.dbDir)) {
       mkdirSync(this.dbDir, { recursive: true });

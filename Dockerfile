@@ -33,6 +33,9 @@ EXPOSE 4000
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/.output ./.output
 COPY --from=builder /app/package.json ./
+# sql.js WASM 文件需要在运行时加载
+RUN mkdir -p /app/.output/server/node_modules/sql.js/dist
+COPY --from=builder /app/node_modules/sql.js/dist/sql-wasm.wasm /app/.output/server/node_modules/sql.js/dist/sql-wasm.wasm
 
 # 创建 data 目录（用于 JSON 热搜持久化）
 RUN mkdir -p /app/data && chown node:node /app/data
