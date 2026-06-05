@@ -255,7 +255,6 @@ const {
 const { settings, loadSettings } = useSettings();
 const auth = useAuth();
 const requestUnlock = inject<(onSuccess?: () => void) => void>("requestUnlock");
-const { addHistory } = useSearchHistory();
 
 // 获取搜索选项（使用最新的用户设置）
 function getSearchOptions() {
@@ -286,7 +285,6 @@ async function doSearch() {
   loadSettings();
   const keyword = kw.value.trim();
   recordHotSearch(keyword);
-  addHistory(keyword);
   // 同步搜索词到 URL
   if (router) {
     router.replace({ query: { q: keyword } });
