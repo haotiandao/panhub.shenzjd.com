@@ -1,12 +1,12 @@
 // Simple API smoke tests for Nitro endpoints
 // Usage:
-//   API_BASE=http://localhost:3001/api pnpm run test:api
+//   API_BASE=http://localhost:4000/api pnpm run test:api
 // or
 //   pnpm run dev  (in another shell) then: pnpm run test:api
 
 import { ofetch } from "ofetch";
 
-const API_BASE = process.env.API_BASE || "http://localhost:3001/api";
+const API_BASE = process.env.API_BASE || "http://localhost:4000/api";
 const KW = process.env.KW || "1"; // 统一关键词：1
 const KW_LIST = (() => {
   const raw = process.env.KW_LIST;

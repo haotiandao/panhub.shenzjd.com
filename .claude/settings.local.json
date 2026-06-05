@@ -51,7 +51,12 @@
       "Bash(node -e ' *)",
       "mcp__plugin_playwright_playwright__browser_run_code_unsafe",
       "Bash(pkill -f \"nuxt dev\")",
-      "Bash(curl -s http://localhost:3001)"
+      "Bash(curl -s http://localhost:4000)",
+      "Bash(pnpm exec *)",
+      "Bash(xargs ps -p)",
+      "Bash(kill 12871)",
+      "Bash(ps *)",
+      "Bash(kill 52104)"
     ]
   }
 }

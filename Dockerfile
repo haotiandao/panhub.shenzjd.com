@@ -23,11 +23,11 @@ WORKDIR /app
 
 # 设置环境变量
 ENV NODE_ENV=production
-ENV PORT=3001
+ENV PORT=4000
 ENV HOST=0.0.0.0
 ENV NITRO_LOG_LEVEL=info
 
-EXPOSE 3001
+EXPOSE 4000
 
 # 从构建阶段复制所有必要文件
 COPY --from=builder /app/node_modules ./node_modules

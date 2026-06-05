@@ -3,21 +3,21 @@
     {
       "term": "高分词",
       "score": 3,
-      "lastSearched": 1780098881897,
-      "createdAt": 1780098881897
+      "lastSearched": 1780647398954,
+      "createdAt": 1780647398954
     },
     {
       "term": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
       "score": 1,
-      "lastSearched": 1780098881899,
-      "createdAt": 1780098881899
+      "lastSearched": 1780647398955,
+      "createdAt": 1780647398955
     },
     {
       "term": "低分词",
       "score": 1,
-      "lastSearched": 1780098881898,
-      "createdAt": 1780098881898
+      "lastSearched": 1780647398954,
+      "createdAt": 1780647398954
     }
   ],
-  "updatedAt": 1780098881899
+  "updatedAt": 1780647398955
 }

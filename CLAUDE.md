@@ -108,5 +108,5 @@ Route rules in `nuxt.config.ts` disable caching for all API routes (SWR 3600 onl
 - `SEARCH_PASSWORD`: Optional password for search access. Empty = no password gate.
 - `LOG_LEVEL`: Logging level (default: `info`).
 - `NITRO_PRESET`: Deployment preset (auto-detect if unset).
-- `PORT`: Server port (default: `3001`).
+- `PORT`: Server port (default: `4000`).
 - `VERCEL`: Auto-detected for Vercel deployment.

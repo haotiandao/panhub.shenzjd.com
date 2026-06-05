@@ -64,11 +64,11 @@
 
 ```bash
 # 快速启动
-docker run --name panhub -p 3001:3001 -d ghcr.io/wu529778790/panhub.shenzjd.com:latest
+docker run --name panhub -p 4000:4000 -d ghcr.io/wu529778790/panhub.shenzjd.com:latest
 
 # 数据持久化（推荐）
 mkdir -p /root/panhub/data
-docker run -d --name panhub -p 3001:3001 \
+docker run -d --name panhub -p 4000:4000 \
   -v /root/panhub/data:/app/data \
   ghcr.io/wu529778790/panhub.shenzjd.com:latest
 ```
@@ -124,7 +124,7 @@ pnpm build
 |--------|--------|------|
 | `LOG_LEVEL` | `info` | 日志级别（debug/info/warn/error） |
 | `NITRO_PRESET` | auto-detect | 部署预设（vercel/cloudflare/docker） |
-| `PORT` | `3001` | 服务端口 |
+| `PORT` | `4000` | 服务端口 |
 | `SEARCH_PASSWORD` | 空 | 非空时启用密码门，搜索时需输入正确密码（Cookie 30 天有效） |
 
 ### 部署差异说明
