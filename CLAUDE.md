@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-PanHub is a Nuxt 4 web application that aggregates search results from Telegram channels and external plugin sites to find cloud storage resources (Aliyun, Quark, Baidu, 115, Xunlei, etc.). It supports priority-based batch processing, unified LRU caching with namespaces, JSON file hot search persistence (with memory fallback), and deploys to Cloudflare Workers (default), Vercel, or Docker.
+PanHub is a Nuxt 4 web application that aggregates search results from Telegram channels and external plugin sites to find cloud storage resources (Aliyun, Quark, Baidu, 115, Xunlei, etc.). It supports priority-based batch processing, unified LRU caching with namespaces, SQLite hot search persistence (with memory fallback), and deploys to Cloudflare Workers (default), Vercel, or Docker.
 
 ## Package Manager
 
@@ -39,14 +39,14 @@ npm deploy:cf            # Deploy to Cloudflare Workers
 
 - **`services/searchService.ts`**: Main orchestrator. Uses `p-limit` for concurrency, `UnifiedCache` for caching, `PluginHealthChecker` to skip unhealthy plugins.
 - **`services/tg.ts`**: Telegram channel post fetching with Cheerio HTML parsing.
-- **`services/hotSearchService.ts`** + **`hotSearchStore.ts`** / **`jsonFileHotSearchStore.ts`** / **`memoryHotSearchStore.ts`**: Hot search persistence with adapter pattern — JSON file (Docker/local) or memory (serverless).
+- **`services/hotSearchService.ts`** + **`hotSearchStore.ts`** / **`sqliteHotSearchStore.ts`** / **`memoryHotSearchStore.ts`**: Hot search persistence with adapter pattern — SQLite (Docker/local) or memory (serverless).
 - **`services/doubanHotService.ts`**: Douban hot list fetching.
 - **`cache/unifiedCache.ts`**: Namespaced cache wrapper around `MemoryCache`. Namespaces: `TG_SEARCH`, `PLUGIN_SEARCH`, `HOT_SEARCH`. Cache keys: `tg:${keyword}:${channels}`, `plugin:${keyword}:${plugins}`.
 - **`cache/memoryCache.ts`**: LRU cache with TTL expiration and memory monitoring.
-- **`plugins/manager.ts`**: Plugin registry (`BaseAsyncPlugin` base class, global registry). Each plugin implements `AsyncSearchPlugin` interface.
+- **`plugins/manager.ts`**: Plugin registry (`BaseAsyncPlugin` base class, global registry pattern via `registerGlobalPlugin()`). Each plugin implements `AsyncSearchPlugin` interface with `name()`, `priority()`, `search()` methods.
 - **`plugins/*.ts`**: ~20 search plugins (pansearch, qupansou, panta, etc.).
-- **`plugins/pluginHealth.ts`**: Tracks plugin failure rates, auto-skips unhealthy plugins.
-- **`utils/fetch.ts`**: Network wrapper with retry/timeout. **`utils/searchKeyword.ts`**: Builds keyword variants for deep search. **`utils/errors.ts`**: Error classification and `ErrorCollector`. **`utils/logger.ts`**: Logging.
+- **`plugins/pluginHealth.ts`**: Circuit breaker pattern — tracks plugin failure rates, auto-skips unhealthy plugins for 5 minutes.
+- **`utils/fetch.ts`**: Network wrapper with retry/timeout (via `fetchWithRetry`). **`utils/searchKeyword.ts`**: Builds keyword variants for deep search (CJK-aware splitting, noise filtering). **`utils/errors.ts`**: Error classification and `ErrorCollector`. **`utils/logger.ts`**: Logging.
 - **`types/models.ts`**: Core interfaces — `SearchResult`, `MergedLink`, `MergedLinks`, `SearchResponse`, `SearchRequest`.
 
 ### Client-Side
@@ -63,6 +63,7 @@ npm deploy:cf            # Deploy to Cloudflare Workers
 - **`channels.json`**: TG channel lists (`priorityChannels`, `defaultChannels`), concurrency, timeouts, cache TTL. Loaded into `nuxt.config.ts` runtimeConfig.
 - **`plugins.ts`**: Plugin names (`ALL_PLUGIN_NAMES`), platform info (`PLATFORM_INFO` with colors/icons), `DEFAULT_USER_SETTINGS`, `STORAGE_KEYS`.
 - **`doubanHot.ts`**: Douban API configuration.
+- **`data/`**: SQLite database for hot search persistence (Docker/local only, not in git).
 
 ### Authentication
 
@@ -80,7 +81,7 @@ Route rules in `nuxt.config.ts` disable caching for all API routes (SWR 3600 onl
 
 - **Cloudflare Workers** (default): `wrangler.toml` with `nodejs_compat` flag. `npm deploy:cf` or `wrangler deploy`.
 - **Vercel**: Auto-detected via `VERCEL` env var. Sets `nitro.preset: "vercel"`.
-- **Docker**: `Dockerfile` uses `node:20-alpine`, builds with `NITRO_PRESET=node-server`. Data dir `/app/data` for JSON hot search persistence. CI builds push to GHCR and Docker Hub.
+- **Docker**: `Dockerfile` uses `node:20-alpine`, builds with `NITRO_PRESET=node-server`. Data dir `/app/data` for SQLite hot search persistence. CI builds push to GHCR and Docker Hub.
 - **Nitro preset**: Auto-detected via `NITRO_PRESET` env var or platform detection. Defaults to `cloudflare-module`.
 
 ## CI/CD (`.github/workflows/`)
@@ -102,6 +103,7 @@ Route rules in `nuxt.config.ts` disable caching for all API routes (SWR 3600 onl
 - Unit tests: `test/unit/*.test.ts`.
 - Integration tests: `test/*.mjs`.
 - Code style: 2-space indent, semicolons, double quotes.
+- Commit messages: Conventional Commits (`feat:`, `fix:`, `refactor:`, `delete:`). Keep subjects short and imperative, one logical change per commit.
 
 ## Environment Variables
 
