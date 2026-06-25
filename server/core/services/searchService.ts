@@ -324,33 +324,44 @@ export class SearchService {
 
       const startTime = Date.now();
       const pluginName = plugin.name();
-      const queries =
-        (keyword || "").trim().length <= 1
-          ? [keyword, "电影", "movie", "1080p"]
-          : buildSearchKeywordVariants(keyword).slice(0, 3);
 
-      let results: SearchResult[] = [];
-      for (const [index, query] of queries.entries()) {
-        const currentResults = await this.withTimeout<SearchResult[]>(
-          plugin.search(query, ext),
-          timeoutMs,
-          []
-        );
+      try {
+        const queries =
+          (keyword || "").trim().length <= 1
+            ? [keyword, "电影", "movie", "1080p"]
+            : buildSearchKeywordVariants(keyword).slice(0, 3);
 
-        results = this.mergeUniqueResults(results, currentResults || []);
+        let results: SearchResult[] = [];
+        for (const [index, query] of queries.entries()) {
+          // 为每次插件请求创建独立的 AbortController，
+          // 超时后 withTimeout 会 abort，使底层请求有机会被真正取消（而非泄漏）
+          const controller = new AbortController();
+          const currentResults = await this.withTimeout<SearchResult[]>(
+            plugin.search(query, { ...ext, signal: controller.signal }),
+            timeoutMs,
+            [],
+            controller
+          );
 
-        if (
-          results.length >= SearchService.PLUGIN_VARIANT_TRIGGER ||
-          index === queries.length - 1
-        ) {
-          break;
+          results = this.mergeUniqueResults(results, currentResults || []);
+
+          if (
+            results.length >= SearchService.PLUGIN_VARIANT_TRIGGER ||
+            index === queries.length - 1
+          ) {
+            break;
+          }
         }
+
+        const responseTime = Date.now() - startTime;
+        this.healthChecker.recordSuccess(pluginName, responseTime);
+
+        return results;
+      } catch (error) {
+        // 记录失败，使插件健康检查熔断器能够触发
+        this.healthChecker.recordFailure(pluginName);
+        throw error;
       }
-
-      const responseTime = Date.now() - startTime;
-      this.healthChecker.recordSuccess(pluginName, responseTime);
-
-      return results;
     });
 
     const resultsByPlugin = await this.runWithConcurrency(
@@ -383,12 +394,19 @@ export class SearchService {
   private withTimeout<T>(
     promise: Promise<T>,
     ms: number,
-    fallback: T
+    fallback: T,
+    controller?: AbortController
   ): Promise<T> {
     if (!ms || ms <= 0) return promise;
     let timeoutHandle: any;
     const timeoutPromise = new Promise<T>((resolve) => {
-      timeoutHandle = setTimeout(() => resolve(fallback), ms);
+      timeoutHandle = setTimeout(() => {
+        // 超时后取消底层请求，避免 socket/内存泄漏
+        if (controller && !controller.signal.aborted) {
+          controller.abort();
+        }
+        resolve(fallback);
+      }, ms);
     });
     return Promise.race([
       promise.finally(() => clearTimeout(timeoutHandle)),
