@@ -1,4 +1,24 @@
-import { defineEventHandler, readBody, sendError, createError, getAbortSignal } from "h3";
+import { defineEventHandler, readBody, sendError, createError } from "h3";
+
+/** 从 H3 event 中提取客户端断开信号（兼容 h3 无 getAbortSignal 的版本） */
+function getClientAbortSignal(event: any): AbortSignal | undefined {
+  // 优先使用 h3 原生能力（若未来版本支持）
+  if (typeof event._signal === "object" && event._signal instanceof AbortSignal) {
+    return event._signal;
+  }
+  // 回退：监听 node req 的 close 事件
+  const req = event.node?.req;
+  if (req && typeof req.on === "function") {
+    const controller = new AbortController();
+    req.on("close", () => {
+      if (req.destroyed || req.writableEnded === false && req.readableEnded) {
+        controller.abort();
+      }
+    });
+    return controller.signal;
+  }
+  return undefined;
+}
 import { requireSearchAuth } from "../utils/requireAuth";
 import { getOrCreateSearchService } from "../core/services";
 import { logSearchOnce } from "../utils/searchLog";
@@ -40,7 +60,7 @@ export default defineEventHandler(async (event) => {
   if (body.src === "tg") body.plugins = undefined;
   else if (body.src === "plugin") body.channels = undefined;
 
-  const signal = getAbortSignal(event);
+  const signal = getClientAbortSignal(event);
 
   const { response: result, warnings } = await service.searchWithWarnings(
     kw,
