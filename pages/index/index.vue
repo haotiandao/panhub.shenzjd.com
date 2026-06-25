@@ -92,6 +92,14 @@
       </div>
     </div>
 
+    <!-- 链接检测助手安装提示 -->
+    <div v-if="hasResults && showCheckerTip" class="checker-tip">
+      <span class="checker-tip__icon">💡</span>
+      <span class="checker-tip__text">安装<strong>链接检测助手</strong>油猴脚本，自动标记失效链接</span>
+      <a href="/panhub-link-checker.user.js" class="checker-tip__btn">一键安装</a>
+      <button class="checker-tip__close" @click="dismissCheckerTip" aria-label="关闭">✕</button>
+    </div>
+
     <!-- 搜索结果 -->
     <section v-if="hasResults" class="results-section">
       <div class="results-grid">
@@ -254,6 +262,30 @@ const {
 } = useSearch();
 const { settings, loadSettings } = useSettings();
 const auth = useAuth();
+
+// 链接检测助手安装提示
+const CHECKER_TIP_KEY = "panhub:checker-tip-dismissed";
+const showCheckerTip = ref(false);
+function checkCheckerTip() {
+  if (typeof window === "undefined") return;
+  // 已安装脚本 → 隐藏
+  if ((window as any).__panhub_linkCheckerReady) return;
+  // 已关闭过 → 隐藏
+  try {
+    if (localStorage.getItem(CHECKER_TIP_KEY)) return;
+  } catch {}
+  showCheckerTip.value = true;
+}
+function dismissCheckerTip() {
+  showCheckerTip.value = false;
+  try {
+    localStorage.setItem(CHECKER_TIP_KEY, "1");
+  } catch {}
+}
+// 首次搜索后检查（延迟等结果加载完毕）
+watch(hasResults, (v) => {
+  if (v) setTimeout(checkCheckerTip, 2000);
+});
 const requestUnlock = inject<(onSuccess?: () => void) => void>("requestUnlock");
 
 // 获取搜索选项（使用最新的用户设置）
@@ -1024,6 +1056,75 @@ function visibleSorted(items: any[]) {
   .pulse-dot {
     animation: none;
     opacity: 0.7;
+  }
+}
+
+/* 链接检测助手安装提示条 */
+.checker-tip {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  max-width: 820px;
+  margin: 0 auto 16px;
+  padding: 10px 16px;
+  background: var(--bg-surface, rgba(255, 255, 255, 0.7));
+  border: 1px solid var(--border-light, #e5e7eb);
+  border-radius: var(--radius-md, 12px);
+  font-size: 13px;
+  color: var(--text-secondary, #4b5563);
+  animation: tipFadeIn 0.3s ease;
+}
+.checker-tip__icon {
+  font-size: 16px;
+  flex-shrink: 0;
+}
+.checker-tip__text {
+  flex: 1;
+  min-width: 0;
+}
+.checker-tip__text strong {
+  color: var(--primary, #0f766e);
+}
+.checker-tip__btn {
+  flex-shrink: 0;
+  padding: 4px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #fff;
+  background: var(--primary, #0f766e);
+  border: none;
+  border-radius: var(--radius-sm, 8px);
+  cursor: pointer;
+  text-decoration: none;
+  transition: opacity 0.15s;
+}
+.checker-tip__btn:hover {
+  opacity: 0.85;
+}
+.checker-tip__close {
+  flex-shrink: 0;
+  background: none;
+  border: none;
+  font-size: 14px;
+  color: var(--text-tertiary, #9ca3af);
+  cursor: pointer;
+  padding: 2px 4px;
+  line-height: 1;
+}
+.checker-tip__close:hover {
+  color: var(--text-primary, #1f2937);
+}
+@keyframes tipFadeIn {
+  from { opacity: 0; transform: translateY(-6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@media (max-width: 640px) {
+  .checker-tip {
+    margin: 0 8px 12px;
+    padding: 8px 12px;
+    font-size: 12px;
+    gap: 8px;
   }
 }
 </style>
