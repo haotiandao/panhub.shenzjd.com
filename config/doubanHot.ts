@@ -15,22 +15,20 @@ export interface DoubanHotSourceConfig {
 }
 
 export const DOUBAN_HOT_SOURCES: DoubanHotSourceConfig[] = [
-  // 电影分类
-  { id: "douban-top250", label: "电影", type: "Top250", typeId: 0 },
+  // 电影分类（typeId 来自豆瓣 /j/chart/top_list API 实测）
+  { id: "douban-top250", label: "电影", type: "Top250", typeId: -1 }, // 特殊：Top250 用独立爬虫
   { id: "douban-drama", label: "电影", type: "剧情", typeId: 3 },
   { id: "douban-comedy", label: "电影", type: "喜剧", typeId: 24 },
   { id: "douban-action", label: "电影", type: "动作", typeId: 5 },
   { id: "douban-romance", label: "电影", type: "爱情", typeId: 6 },
-  { id: "douban-scifi", label: "电影", type: "科幻", typeId: 11 },
-  { id: "douban-animation", label: "电影", type: "动画", typeId: 25 },
+  { id: "douban-scifi", label: "电影", type: "科幻", typeId: 15 },
+  { id: "douban-animation", label: "电影", type: "动画", typeId: 16 },
   { id: "douban-mystery", label: "电影", type: "悬疑", typeId: 20 },
   { id: "douban-crime", label: "电影", type: "犯罪", typeId: 10 },
-  { id: "douban-adventure", label: "电影", type: "冒险", typeId: 17 },
   { id: "douban-war", label: "电影", type: "战争", typeId: 22 },
-  { id: "douban-history", label: "电影", type: "历史", typeId: 13 },
   { id: "douban-documentary", label: "电影", type: "纪录片", typeId: 1 },
-  // 电视剧
-  { id: "douban-tv", label: "电视剧", type: "热门", typeId: 19 },
+  // 电视剧（typeId=26 实测返回电视剧）
+  { id: "douban-tv", label: "电视剧", type: "热门", typeId: 26 },
 ];
 
 /** 默认展示的分类 */

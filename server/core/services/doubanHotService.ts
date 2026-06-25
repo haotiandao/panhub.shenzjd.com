@@ -6,6 +6,7 @@
  */
 
 import { ofetch } from "ofetch";
+import { load } from "cheerio";
 import { DOUBAN_HOT_SOURCES, type DoubanHotSourceConfig } from "../../../config/doubanHot";
 import { MemoryCache } from "../cache/memoryCache";
 
@@ -98,6 +99,57 @@ async function fetchTopList(typeId: number, limit = 50): Promise<DoubanHotItem[]
   return allItems;
 }
 
+/**
+ * Top250 专用爬虫（该分类不支持 JSON API，需爬 HTML）
+ */
+async function scrapeTop250(): Promise<DoubanHotItem[]> {
+  const allItems: DoubanHotItem[] = [];
+  const UA_LOCAL = "Mozilla/5.0 (iPhone; CPU iPhone OS 15_0 like Mac OS X) AppleWebKit/605.1.15";
+
+  for (let page = 0; page < 10; page++) {
+    const start = page * 25;
+    const url = start === 0
+      ? "https://movie.douban.com/top250"
+      : `https://movie.douban.com/top250?start=${start}`;
+
+    try {
+      const html = await ofetch<string>(url, {
+        headers: { "user-agent": UA_LOCAL },
+        timeout: 10000,
+      });
+      const $ = load(html);
+
+      $(".article ol.grid_view li").each((_, el) => {
+        const dom = $(el);
+        const href = dom.find(".pic a").attr("href") || "";
+        const id = Number(href.match(/\d+/)?.[0]) || undefined;
+        const rawTitle = dom.find(".info .title").first().text() || "";
+        const score = dom.find(".info .rating_num").text().trim() || "0.0";
+        const title = rawTitle ? `【${score}】${rawTitle}` : "";
+        if (!title) return;
+
+        const img = dom.find("img");
+        const cover = img.attr("data-src") || img.attr("src") || undefined;
+        const coverUrl = cover?.startsWith("//") ? "https:" + cover : cover;
+
+        allItems.push({
+          id,
+          title,
+          cover: coverUrl,
+          desc: dom.find(".info .inq").text().trim(),
+          url: href || `https://movie.douban.com/subject/${id}/`,
+        });
+      });
+
+      if (page < 9) await new Promise((r) => setTimeout(r, 1500));
+    } catch {
+      if (page >= 1 && allItems.length === 0) break;
+    }
+  }
+
+  return allItems;
+}
+
 /** 获取指定分类的全部数据（带缓存） */
 async function fetchAllItems(categoryId: string): Promise<DoubanHotItem[]> {
   const cacheKey = `douban-api:${categoryId}`;
@@ -107,7 +159,10 @@ async function fetchAllItems(categoryId: string): Promise<DoubanHotItem[]> {
   const config = DOUBAN_HOT_SOURCES.find((s) => s.id === categoryId);
   if (!config) return [];
 
-  const items = await fetchTopList(config.typeId);
+  // Top250 不支持 JSON API，用独立爬虫
+  const items = config.typeId === -1
+    ? await scrapeTop250()
+    : await fetchTopList(config.typeId);
   if (items.length > 0) {
     allItemsCache.set(cacheKey, items, CACHE_TTL_MS);
   }
